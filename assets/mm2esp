@@ -1,0 +1,122 @@
+-- This one is madeby me :)
+
+getgenv().Enabled = "null"
+
+-- > Declarations < --
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LP = Players.LocalPlayer
+local roles
+
+-- > Functions < --
+
+function CreateHighlight() 
+	for i, v in pairs(Players:GetPlayers()) do
+		if v ~= LP and v.Character and not v.Character:FindFirstChild("Highlight") then
+			local hl = Instance.new("Highlight")          
+			hl.Parent = v.Character
+			hl.FillColor = Color3.fromRGB(23, 225, 0)
+		end
+	end
+end
+
+
+local threats = {
+	murd = nil,
+	sherriff = nil,
+	hero = nil
+}
+
+local function getRole()
+	if not IsAlive(LP) then 
+		print("Local player is dead.")
+		return nil 
+	end
+
+	roles = ReplicatedStorage:FindFirstChild("GetPlayerData", true):InvokeServer()
+
+
+
+	for i, v in pairs(roles) do
+		print("Player:", i, "Role:", v.Role)
+	end
+
+	threats.murd = nil
+	threats.sherriff = nil
+	threats.hero = nil
+
+	for i, v in pairs(roles) do
+		if v.Role == "Murderer" then
+			threats.murd = i
+			print(i)
+		elseif v.Role == "Sheriff" then
+			threats.sherriff = i
+		elseif v.Role == "Hero" then
+			threats.hero = i
+		end
+	end
+	print("owo")
+	-- Check if the threats were properly populated
+	print("Murderer:", threats.murd)
+	print("Sheriff:", threats.sherriff)
+	print("Hero:", threats.hero)
+
+	return threats  -- Return the threats table
+end
+
+-- Function to update the highlights based on player roles
+function UpdateHighlights()
+	local ThreatRoles = getRole()  -- Get the roles
+
+	if not ThreatRoles then  -- Ensure the roles are valid
+		print("No roles found or player is dead.")
+		return
+	end
+
+	-- Loop through all the players and update their highlights
+	for _, plr in ipairs(Players:GetPlayers()) do
+		print(plr.Name)  -- Print the player's name
+		if plr == LP then continue end  -- Skip the local player
+
+		if not plr.Character:FindFirstChild("Highlight") then  -- Create a highlight if missing
+			CreateHighlight()
+		end
+
+		local Highlight = plr.Character:FindFirstChild("Highlight")
+		if not Highlight then continue end  -- Skip if no highlight found
+
+		-- Update the highlight based on the role
+		if ThreatRoles.murd and plr.Name == ThreatRoles.murd and IsAlive(plr) then 
+			Highlight.FillColor = Color3.fromRGB(225, 0, 0)  -- Red for Murderer
+			print("Updated ESP for:", plr.Name, "- Murderer")
+		elseif ThreatRoles.hero and plr.Name == ThreatRoles.hero and IsAlive(plr) then 
+			Highlight.FillColor = Color3.fromRGB(255, 238, 0)  -- Yellow for Hero
+			print("Updated ESP for:", plr.Name, "- Hero")
+		elseif ThreatRoles.sherriff and plr.Name == ThreatRoles.sherriff and IsAlive(plr) then 
+			Highlight.FillColor = Color3.fromRGB(0, 13, 255)  -- Blue for Sheriff
+			print("Updated ESP for:", plr.Name, "- Sheriff")
+		else
+			Highlight.FillColor = Color3.fromRGB(4, 225, 0)  -- Green for Innocent
+			print("Updated ESP for:", plr.Name, "- Innocent")
+		end
+	end
+end
+
+function IsAlive(Player)
+	if Player.Character and Player.Character:FindFirstChild("Humanoid") then
+		if Player.Character.Humanoid.Health > 0 then
+			return true
+		else
+			return false
+		end
+	end 
+end
+
+-- > Loops < --
+game:GetService("RunService").RenderStepped:Connect(function()
+	if getgenv().Enabled == false then return end
+	CreateHighlight()
+	UpdateHighlights()
+end)
